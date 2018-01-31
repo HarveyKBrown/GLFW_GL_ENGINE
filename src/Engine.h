@@ -10,7 +10,7 @@ class Engine {
 		void update();
 		void render();
 
-		static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
+		void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
 		bool running() { return isRunning; };
 
