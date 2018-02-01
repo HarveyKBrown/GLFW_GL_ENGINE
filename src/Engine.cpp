@@ -1,10 +1,12 @@
 #include "Engine.h"
+#include "EventManager.h"
 
-void Engine::key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+/* Older event function that I couldnt get to work */
+/*void Engine::key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		isRunning = false;
-}
+}*/
 
 bool Engine::init(const char* title, int width, int height)
 {
@@ -17,7 +19,8 @@ bool Engine::init(const char* title, int width, int height)
 	}
 	glfwMakeContextCurrent(window);
 
-	//glfwSetKeyCallback(window, key_callback);
+	glfwSetKeyCallback(window, EventManager::handleEvents);
+	EventManager::registerEvent(GLFW_KEY_ESCAPE, [&] () { isRunning = false; });
 
 	isRunning = true;
 	return true;
