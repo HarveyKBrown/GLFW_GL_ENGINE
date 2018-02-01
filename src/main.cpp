@@ -9,6 +9,7 @@ int main ( int argc, char* args[] )
 
 	while (engine->running()) 
 	{
+		engine->calculateDeltaTime();
 		engine->update();
 		engine->render();
 	}

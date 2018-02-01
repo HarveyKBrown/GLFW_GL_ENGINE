@@ -1,13 +1,6 @@
 #include "Engine.h"
 #include "EventManager.h"
 
-/* Older event function that I couldnt get to work */
-/*void Engine::key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
-{
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		isRunning = false;
-}*/
-
 bool Engine::init(const char* title, int width, int height)
 {
 	if (!glfwInit()) { return false; }
@@ -26,12 +19,20 @@ bool Engine::init(const char* title, int width, int height)
 	return true;
 }
 
+void Engine::calculateDeltaTime()
+{
+	LAST = NOW;
+	NOW = glfwGetTime();
+	dTime = NOW - LAST;
+}
+
 void Engine::update()
 {
 	float ratio;
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
 	ratio = width / (float) height;
+	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 	glViewport(0, 0, width, height);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glMatrixMode(GL_PROJECTION);

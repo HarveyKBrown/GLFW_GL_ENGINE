@@ -1,4 +1,5 @@
 #include "EventManager.h"
+#include <iostream>
 
 /* EventCode -> EventLambda */
 std::map<int, std::function<void()>> eventMap;
@@ -8,7 +9,8 @@ void EventManager::handleEvents(GLFWwindow *window, int key, int scancode, int a
 {
 	if (action == GLFW_PRESS)
 	{
-		eventMap[GLFW_KEY_ESCAPE]();
+		if (eventMap[key])
+			eventMap[key]();
 	}
 }
 
