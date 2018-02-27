@@ -7,7 +7,7 @@ int main ( int argc, char* args[] )
 	engine = new Engine();
 	engine->init("GLFW Engine Example", 500, 500);
 
-	while (engine->running()) 
+	while (engine->Running())
 	{
 		engine->calculateDeltaTime();
 		engine->update();
