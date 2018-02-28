@@ -5,10 +5,10 @@
 #include <string>
 #include <GL/glew.h>
 
-int ShaderConstructor::createShader(char* name, int shaderType)
+int ShaderConstructor::LoadShader(const char* FILENAME, int shaderType)
 {
 	/* Load text file into string */
-	std::ifstream shaderFile(name);
+	std::ifstream shaderFile(FILENAME);
 	std::string sShaderSource	(std::istreambuf_iterator<char>(shaderFile),
 								(std::istreambuf_iterator<char>()		));
 	const char* shaderSource = sShaderSource.c_str();
@@ -23,14 +23,26 @@ int ShaderConstructor::createShader(char* name, int shaderType)
 	if (!success)
 	{
 		glGetShaderInfoLog(newShader, 512, NULL, infoLog);
-		std::cout << "Failed to compile shader " << name << std::endl << infoLog << std::endl;
+		std::cout << "Failed to compile shader " << FILENAME << std::endl << infoLog << std::endl;
 		return 0;
 	}
 	return newShader;
 }
 
-int ShaderConstructor::createShaderProgram(int vertexShader, int fragmentShader)
+int ShaderConstructor::CreateShaderProgram(int vertexShader, int fragmentShader)
 {
+	int shaderProgram = glCreateProgram();
+	glAttachShader(shaderProgram, vertexShader);
+	glAttachShader(shaderProgram, fragmentShader);
+	glLinkProgram(shaderProgram);
 
-	return 0;
+	int success;
+	char infoLog[512];
+	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+	if (!success) {
+		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+		return 0;
+	}
+	return shaderProgram;
 }

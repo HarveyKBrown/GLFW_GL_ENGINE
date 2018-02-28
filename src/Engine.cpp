@@ -1,16 +1,28 @@
 #include "Engine.h"
 #include "EventManager.h"
+#include "ShaderConstructor.h"
 
 #include <iostream>
+
+/* Variables for temporary testing purposes */
+int vertShad;
+int fragShad;
+int shaderProgram;
+unsigned int VBO, VAO, EBO;
+
+
 
 bool Engine::init(const char* title, int width, int height)
 {
 	/* Initialise GLFW */
 	if (!glfwInit())
-	{ 
+	{
 		std::cout << "Failed to initialise GLFW" << std::endl;
-		return false; 
+		return false;
 	}
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	/* Create  Window */
 	window = glfwCreateWindow(width, height, title, NULL, NULL);
@@ -19,6 +31,7 @@ bool Engine::init(const char* title, int width, int height)
 		std::cout << "Failed to create window " << title << std::endl;
 		return false;
 	}
+	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 	glfwMakeContextCurrent(window);
 
 	/* Initialize InputHandler */
@@ -26,13 +39,7 @@ bool Engine::init(const char* title, int width, int height)
 	EventManager::registerEvent(GLFW_KEY_ESCAPE, [&] () { isRunning = false; });
 
 	/* Initialise GLEW */
-	if (!glewInit())
-   	{
-		std::cout << "Failed to intitialise GLEW" << std::endl;
-		return false;
-	}
-
-	glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+	glewInit();
 
 	isRunning = true;
 	return true;
@@ -40,8 +47,17 @@ bool Engine::init(const char* title, int width, int height)
 
 bool Engine::initShaders()
 {
-	/* Create Shaders and Shader Programs for Seperate Scenes */
-	return false;
+	vertShad = ShaderConstructor::LoadShader("shaders/simple.vert", GL_VERTEX_SHADER);
+	fragShad = ShaderConstructor::LoadShader("shaders/simple.frag", GL_FRAGMENT_SHADER);
+	if (vertShad == 0 || fragShad == 0) return false;
+
+	shaderProgram = ShaderConstructor::CreateShaderProgram(vertShad, fragShad);
+	if (shaderProgram == 0) return 0;
+
+	glDeleteShader(vertShad);
+	glDeleteShader(fragShad);
+
+	return true;
 }
 
 void Engine::calculateDeltaTime()
@@ -53,28 +69,49 @@ void Engine::calculateDeltaTime()
 
 void Engine::update()
 {
-	float ratio;
-	int width, height;
-	glfwGetFramebufferSize(window, &width, &height);
-	ratio = width / (float) height;
-	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-	glViewport(0, 0, width, height);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	/* Update Data or Switch Scenes */
 
-	glBegin(GL_TRIANGLES);
-	glVertex3f(-0.6f, -0.4f, 0.f);
-	glVertex3f(0.6f, -0.4f, 0.f);
-	glVertex3f(0.f, 0.6f, 0.f);
-	glEnd();
+    // set up vertex data (and buffer(s)) and configure vertex attributes
+    // ------------------------------------------------------------------
+    float vertices[] = {
+         0.5f,  0.5f, 0.0f,  // top right
+         0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,  // bottom left
+        -0.5f,  0.5f, 0.0f   // top left
+    };
+    unsigned int indices[] = {  // note that we start from 0!
+        0, 1, 3,  // first Triangle
+        1, 2, 3   // second Triangle
+    };
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
 }
 
 void Engine::render()
 {
+	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glUseProgram(shaderProgram);
+	glBindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	glfwSwapBuffers(window);
 	glfwPollEvents();
 }
@@ -85,4 +122,9 @@ void Engine::clean()
 	window = NULL;
 
 	glfwTerminate();
+}
+
+void Engine::framebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
 }

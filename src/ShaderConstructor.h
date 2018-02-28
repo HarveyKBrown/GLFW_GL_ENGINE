@@ -4,8 +4,8 @@
 class ShaderConstructor
 {
 	public:
-		int createShader(char* name, int shaderType);
-		int createShaderProgram(int vertexShader, int fragmentShader);
+		static int LoadShader(const char* FILENAME, int shaderType);
+		static int CreateShaderProgram(int vertexShader, int fragmentShader);
 };
 
 #endif

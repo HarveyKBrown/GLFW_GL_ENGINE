@@ -6,6 +6,7 @@ int main ( int argc, char* args[] )
 {
 	engine = new Engine();
 	engine->init("GLFW Engine Example", 500, 500);
+	engine->initShaders();
 
 	while (engine->Running())
 	{

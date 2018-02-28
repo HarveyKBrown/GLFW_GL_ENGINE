@@ -17,15 +17,13 @@ class Engine {
 		float DeltaTime() { return deltaTime; };
 
 	private:
-		GLuint LoadShader(const GLchar* source[], GLenum ShaderType);
+		static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 		bool isRunning;
 
 		double deltaTime;
 		double NOW;
 		double LAST;
-
-		GLuint ProgramID = 0;
 
 		GLFWwindow *window;
 };
