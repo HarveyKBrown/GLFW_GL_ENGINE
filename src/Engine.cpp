@@ -1,19 +1,32 @@
 #include "Engine.h"
 #include "EventManager.h"
 #include "ShaderConstructor.h"
-
 #include <iostream>
+#include <glm/glm.hpp>
+#include <glm/vec2.hpp>
+#include "SceneA.h"
+#include "SceneB.h"
 
 /* Variables for temporary testing purposes */
+int scene = 1;
+SceneA sceneA;
+SceneB sceneB;
+//SceneC sceneC;
+//SceneD sceneD;
+//SceneE sceneE;
+
+glm::vec2 hi;
 int vertShad;
 int fragShad;
 int shaderProgram;
 unsigned int VBO, VAO, EBO;
 
 
-
 bool Engine::init(const char* title, int width, int height)
 {
+	glm::vec2 hi(1.0f, 2.0f);
+	std::cout << hi.x << ", " << hi.y << std::endl;
+
 	/* Initialise GLFW */
 	if (!glfwInit())
 	{
@@ -37,6 +50,8 @@ bool Engine::init(const char* title, int width, int height)
 	/* Initialize InputHandler */
 	glfwSetKeyCallback(window, EventManager::handleEvents);
 	EventManager::registerEvent(GLFW_KEY_ESCAPE, [&] () { isRunning = false; });
+	EventManager::registerEvent(GLFW_KEY_1, [&] () { scene = 0; });
+	EventManager::registerEvent(GLFW_KEY_2, [&] () { scene = 1; });
 
 	/* Initialise GLEW */
 	glewInit();
@@ -69,39 +84,18 @@ void Engine::calculateDeltaTime()
 
 void Engine::update()
 {
-	/* Update Data or Switch Scenes */
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	switch (scene)
+	{
+	case 0:
+		sceneA.draw(VAO, VBO, EBO);
+		break;
+	case 1:
+		sceneB.draw(VAO, VBO, EBO);
+		break;
+	}
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    float vertices[] = {
-         0.5f,  0.5f, 0.0f,  // top right
-         0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f,  // bottom left
-        -0.5f,  0.5f, 0.0f   // top left
-    };
-    unsigned int indices[] = {  // note that we start from 0!
-        0, 1, 3,  // first Triangle
-        1, 2, 3   // second Triangle
-    };
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
 }
 
 void Engine::render()
