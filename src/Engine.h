@@ -13,13 +13,12 @@ class Engine {
 		void render();
 		void calculateDeltaTime();
 
-		bool Running() { return isRunning; };
+		bool Running() { return isRunning && !glfwWindowShouldClose(window); };
 		float DeltaTime() { return deltaTime; };
 
 	private:
 		static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-
-		bool isRunning;
+		bool isRunning = true;
 
 		double deltaTime;
 		double NOW;
