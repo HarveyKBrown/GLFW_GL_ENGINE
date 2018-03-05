@@ -7,16 +7,11 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "SceneA.h"
-#include "SceneB.h"
 
 
 /* Variables for temporary testing purposes */
 int scene = 0;
 SceneA sceneA;
-SceneB sceneB;
-//SceneC sceneC;
-//SceneD sceneD;
-//SceneE sceneE;
 
 int shaderProgram;
 int cubeShaderProgram;
@@ -61,6 +56,8 @@ bool Engine::init(const char* title, int width, int height)
 	EventManager::registerEvent(GLFW_KEY_Q, [&] () { isRunning = false; });
 	EventManager::registerEvent(GLFW_KEY_A, [&] () { scene = 0; });
 	EventManager::registerEvent(GLFW_KEY_B, [&] () { scene = 1; });
+	EventManager::registerEvent(GLFW_KEY_C, [&] () { scene = 2; });
+	EventManager::registerEvent(GLFW_KEY_D, [&] () { scene = 3; });
 
 	/* Initialise GLEW */
 	glewInit();
