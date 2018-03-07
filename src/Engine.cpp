@@ -100,7 +100,7 @@ void Engine::calculateDeltaTime()
 
 void Engine::update()
 {
-	rotMatrix = glm::rotate(rotMatrix, (float) deltaTime * glm::radians(120.0f), glm::vec3(0.5f, 0.0f, 0.0f));
+	rotMatrix = glm::rotate(rotMatrix, (float) deltaTime * glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	switch (scene)
 	{
