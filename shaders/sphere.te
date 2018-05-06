@@ -4,9 +4,9 @@ layout(triangles, equal_spacing, cw) in;
 in vec3 tcPosition[];
 out vec3 tePosition;
 out vec3 color;
-uniform mat4 rM;
-uniform mat4 pM;
-uniform mat4 perspective;
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
 
 void main()
 {
@@ -20,8 +20,8 @@ void main()
 	vec3 p2 = gl_TessCoord.z * tcPosition[2];
 
 	tePosition = normalize(p0 + p1 + p2);
-	vec4 pos = pM * rM * vec4(tePosition, 1);
-	gl_Position = perspective * pos;
+	vec4 pos = uView * uModel * vec4(tePosition, 1);
+	gl_Position = uProjection * pos;
 
 	/* "Technically" need to calculate normal to current triangle here */
 

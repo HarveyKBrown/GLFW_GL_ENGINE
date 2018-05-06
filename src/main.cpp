@@ -14,4 +14,5 @@ int main ( int argc, char* args[] )
 		engine->update();
 		engine->render();
 	}
+	return 0;
 }

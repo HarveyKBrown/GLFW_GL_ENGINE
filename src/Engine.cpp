@@ -6,23 +6,22 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "SceneA.h"
+#include <vector>
+#include "GenericShapes.h"
+#include "world.h"
 
+/* Shapes */
+std::vector<Shape*> shapes;
 
-/* Variables for temporary testing purposes */
-int scene = 0;
-SceneA sceneA;
-
+/* Renderer Vars */
 int shaderProgram;
-int cubeShaderProgram;
-int sphereShaderProgram;
 int numberOfVertices;
 unsigned int VBO, VAO, EBO;
-
 int numberOfVert;
 
+/* Shader vars */
 glm::mat4 rotMatrix;
-glm::mat4 posMatrix;
+glm::mat4 cameraPosMatrix;
 glm::mat4 projMatrix = glm::perspective(glm::radians(45.0f), (float)500 / (float)500, 0.1f, 100.0f);
 
 bool Engine::init(const char* title, int width, int height)
@@ -37,7 +36,7 @@ bool Engine::init(const char* title, int width, int height)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	#endif
 
 	/* Create  Window */
@@ -54,16 +53,17 @@ bool Engine::init(const char* title, int width, int height)
 	glfwSetKeyCallback(window, EventManager::handleEvents);
 	EventManager::registerEvent(GLFW_KEY_ESCAPE, [&] () { isRunning = false; });
 	EventManager::registerEvent(GLFW_KEY_Q, [&] () { isRunning = false; });
-	EventManager::registerEvent(GLFW_KEY_A, [&] () { scene = 0; });
-	EventManager::registerEvent(GLFW_KEY_B, [&] () { scene = 1; });
-	EventManager::registerEvent(GLFW_KEY_C, [&] () { scene = 2; });
-	EventManager::registerEvent(GLFW_KEY_D, [&] () { scene = 3; });
 
 	/* Initialise GLEW */
 	glewInit();
 	glEnable(GL_DEPTH_TEST);
 
-	posMatrix = glm::translate(posMatrix, glm::vec3(0.0f, 0.0f, -5.0f));
+	cameraPosMatrix = glm::translate(cameraPosMatrix, glm::vec3(0.0f, 0.0f, -5.0f));
+
+	/* Create Scene Objects */
+	shapes.push_back(new Sphere());
+	shapes.push_back(new Sphere());
+	shapes.push_back(new Cube());
 
 	isRunning = true;
 	return true;
@@ -71,22 +71,24 @@ bool Engine::init(const char* title, int width, int height)
 
 bool Engine::initShaders()
 {
-	int vertShad = ShaderConstructor::LoadShader("shaders/simple.vert", GL_VERTEX_SHADER);
-	int fragShad = ShaderConstructor::LoadShader("shaders/simple.frag", GL_FRAGMENT_SHADER);
-
 	int sphereVert = ShaderConstructor::LoadShader("shaders/sphere.vert", GL_VERTEX_SHADER);
 	int sphereFrag = ShaderConstructor::LoadShader("shaders/sphere.frag", GL_FRAGMENT_SHADER);
 	int sphereTE = ShaderConstructor::LoadShader("shaders/sphere.te", GL_TESS_EVALUATION_SHADER);
 	int sphereTC = ShaderConstructor::LoadShader("shaders/sphere.tc", GL_TESS_CONTROL_SHADER);
 
+	int vertShad = ShaderConstructor::LoadShader("shaders/simple.vert", GL_VERTEX_SHADER);
+	int fragShad = ShaderConstructor::LoadShader("shaders/simple.frag", GL_FRAGMENT_SHADER);
 
-	cubeShaderProgram = ShaderConstructor::CreateShaderProgram(vertShad, fragShad);
-	sphereShaderProgram = ShaderConstructor::CreateShaderProgram(sphereVert, sphereFrag, sphereTC, sphereTE);
+	shaderProgram = ShaderConstructor::CreateShaderProgram(sphereVert, sphereFrag, sphereTC, sphereTE);
+	//shaderProgram = ShaderConstructor::CreateShaderProgram(vertShad, fragShad);
+
+	glDeleteShader(sphereVert);
+	glDeleteShader(sphereFrag);
+	glDeleteShader(sphereTE);
+	glDeleteShader(sphereTC);
 
 	glDeleteShader(vertShad);
 	glDeleteShader(fragShad);
-	//glDeleteShader(sphereTessControl);
-	//glDeleteShader(sphereTessEval);
 
 	return true;
 }
@@ -100,68 +102,46 @@ void Engine::calculateDeltaTime()
 
 void Engine::update()
 {
-	rotMatrix = glm::rotate(rotMatrix, (float) deltaTime * glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-	switch (scene)
-	{
-	case 0:
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		sceneA.draw(VAO, VBO, EBO);
-		shaderProgram = sphereShaderProgram;
-		numberOfVertices = 36;
-		break;
-	case 1:
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		sceneA.draw(VAO, VBO, EBO);
-		shaderProgram = sphereShaderProgram;
-		numberOfVertices = 36;
-		break;
-	case 2:
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		sceneA.draw(VAO, VBO, EBO);
-		shaderProgram = sphereShaderProgram;
-		numberOfVertices = 36;
-	case 3:
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		sceneA.draw(VAO, VBO, EBO);
-		shaderProgram = sphereShaderProgram;
-		numberOfVertices = 36;
-
-	}
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
 }
 
 void Engine::render()
 {
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClearColor(0.5f, 0.2f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	unsigned int modelLoc = glGetUniformLocation(shaderProgram, "rM");
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value_ptr(rotMatrix));
+	/* START VAO LOOP */
+	for (int i = 0; i < shapes.size(); i++) {
+		/* Load Shape Data */
+		Shape* currentShape = shapes[i];
+		currentShape->draw(VAO, VBO, EBO);
+		numberOfVertices = currentShape->getNumVectors();
+		rotMatrix = currentShape->getPosMatrix();
 
-	unsigned int cameraPosition = glGetUniformLocation(shaderProgram, "pM");
-	glUniformMatrix4fv(cameraPosition, 1, GL_FALSE, value_ptr(posMatrix));
+		/* Set Shader Uniforms */
+		unsigned int modelLoc = glGetUniformLocation(shaderProgram, "uModel");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value_ptr(rotMatrix));
+		unsigned int cameraPosition = glGetUniformLocation(shaderProgram, "uView");
+		glUniformMatrix4fv(cameraPosition, 1, GL_FALSE, value_ptr(cameraPosMatrix));
+		unsigned int perspectivePointer = glGetUniformLocation(shaderProgram, "uProjection");
+		glUniformMatrix4fv(perspectivePointer, 1, GL_FALSE, value_ptr(projMatrix));
 
-	unsigned int perspectivePointer = glGetUniformLocation(shaderProgram, "perspective");
-	glUniformMatrix4fv(perspectivePointer, 1, GL_FALSE, value_ptr(projMatrix));
+		glUseProgram(shaderProgram);
+		glBindVertexArray(VAO);
 
-	glUseProgram(shaderProgram);
-	glBindVertexArray(VAO);
-	switch (scene)
-	{
-	case 0:
-		glDrawElements(GL_TRIANGLES, numberOfVertices, GL_UNSIGNED_INT, 0);
-	case 1:
+		//glDrawElements(GL_TRIANGLES, numberOfVertices, GL_UNSIGNED_INT, 0);
 		glPatchParameteri(GL_PATCH_VERTICES, 3);
+		glDrawElements(GL_PATCHES, 1000, GL_UNSIGNED_INT, 0);
+
+		glDeleteVertexArrays(sizeof(VAO), &VAO);
+		glDeleteBuffers(sizeof(VBO), &VBO);
+		glDeleteBuffers(sizeof(EBO), &EBO);
+		/* END VAO LOOP */
 	}
-	glDrawElements(GL_PATCHES, 1000, GL_UNSIGNED_INT, 0);
+
 	glfwSwapBuffers(window);
 	glfwPollEvents();
-
-	glDeleteVertexArrays(sizeof(VAO), &VAO);
-	glDeleteBuffers(sizeof(VBO), &VBO);
-	glDeleteBuffers(sizeof(EBO), &EBO);
 }
 
 void Engine::clean()
