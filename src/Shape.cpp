@@ -23,10 +23,9 @@ void Shape::draw(unsigned int &VAO, unsigned int &VBO, unsigned int &EBO)
 
 glm::mat4 Shape::getPosMatrix()
 {
-	//TODO: Rotation
 	glm::mat4 p = glm::translate(glm::mat4(1.0f), position);
-	//p = glm::rotate(p, orientation);
+	if (glm::length(orientation) != 0)
+		p = glm::rotate(p, glm::length(orientation), glm::normalize(orientation));
 	return p;
-
 }
 

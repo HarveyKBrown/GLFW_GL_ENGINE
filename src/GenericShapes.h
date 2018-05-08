@@ -12,7 +12,7 @@ public:
 	Sphere();
 };
 
-class Cube : public Sphere
+class Cube : public Shape
 {
 public:
 	Cube();

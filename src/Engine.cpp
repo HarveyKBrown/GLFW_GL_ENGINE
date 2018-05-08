@@ -17,6 +17,8 @@ std::vector<Shape*> shapes;
 int shaderProgram;
 int numberOfVertices;
 unsigned int VBO, VAO, EBO;
+glm::vec3 color;
+int sphereIterations;
 int numberOfVert;
 
 /* Shader vars */
@@ -61,7 +63,7 @@ bool Engine::init(const char* title, int width, int height)
 	cameraPosMatrix = glm::translate(cameraPosMatrix, glm::vec3(0.0f, 0.0f, -5.0f));
 
 	/* Create Scene Objects */
-	shapes.push_back(new Sphere());
+	//shapes.push_back(new Sphere());
 	shapes.push_back(new Sphere());
 	shapes.push_back(new Cube());
 
@@ -118,6 +120,8 @@ void Engine::render()
 		currentShape->draw(VAO, VBO, EBO);
 		numberOfVertices = currentShape->getNumVectors();
 		rotMatrix = currentShape->getPosMatrix();
+		sphereIterations = currentShape->sphereIterations;
+		color = currentShape->color;
 
 		/* Set Shader Uniforms */
 		unsigned int modelLoc = glGetUniformLocation(shaderProgram, "uModel");
@@ -126,11 +130,14 @@ void Engine::render()
 		glUniformMatrix4fv(cameraPosition, 1, GL_FALSE, value_ptr(cameraPosMatrix));
 		unsigned int perspectivePointer = glGetUniformLocation(shaderProgram, "uProjection");
 		glUniformMatrix4fv(perspectivePointer, 1, GL_FALSE, value_ptr(projMatrix));
+		unsigned int iterationsPointer = glGetUniformLocation(shaderProgram, "uIterations");
+		glUniform1i(iterationsPointer, sphereIterations);
+		unsigned int colorPointer = glGetUniformLocation(shaderProgram, "uColor");
+		glUniform3f(colorPointer, color[0], color[1], color[2]);
 
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
 
-		//glDrawElements(GL_TRIANGLES, numberOfVertices, GL_UNSIGNED_INT, 0);
 		glPatchParameteri(GL_PATCH_VERTICES, 3);
 		glDrawElements(GL_PATCHES, 1000, GL_UNSIGNED_INT, 0);
 
