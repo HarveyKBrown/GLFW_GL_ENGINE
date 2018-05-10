@@ -21,7 +21,6 @@ public:
 	glm::vec3 position;
 	glm::vec3 orientation;
 	glm::vec3 color;
-	float scale = 1;
 	int sphereIterations = 0;
 };
 
