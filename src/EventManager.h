@@ -14,6 +14,8 @@ class EventManager
 
 		static void handleEvents(GLFWwindow *window, int key, int scancode, int action, int mods);
 
+		static void runEvents();
+
 		static void registerEvent(int eventCode, std::function<void()> f);
 };
 

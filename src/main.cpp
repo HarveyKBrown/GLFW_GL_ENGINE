@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "EventManager.h"
 
 Engine *engine = NULL;
 
@@ -13,6 +14,7 @@ int main ( int argc, char* args[] )
 		engine->calculateDeltaTime();
 		engine->update();
 		engine->render();
+		EventManager::runEvents();
 	}
 	return 0;
 }
