@@ -7,6 +7,7 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
+#include <math.h>
 #include "GenericShapes.h"
 #include "world.h"
 
@@ -77,13 +78,13 @@ bool Engine::init(const char* title, int width, int height)
 
 	/* Initialize InputHandler */
 	glfwSetKeyCallback(window, EventManager::handleEvents);
-	EventManager::registerEvent(GLFW_KEY_ESCAPE, [&] () { isRunninsg = false; });
+	EventManager::registerEvent(GLFW_KEY_ESCAPE, [&] () { isRunning = false; });
 	EventManager::registerEvent(GLFW_KEY_Q, [&] () { isRunning = false; });
 	/* Controls : Camera */
 	EventManager::registerEvent(GLFW_KEY_P, [&]() { 
 		if (cameraMode = DEMO)
 		{
-			cameraPosMatrix = screenshotPosition;
+			cameraPosMatrix = screenshotCamPosition;
 			cameraMode = SCREENSHOT;
 		}
 	}); //P to go to screenshot camera
@@ -117,8 +118,8 @@ bool Engine::init(const char* title, int width, int height)
 
 	EventManager::registerEvent(GLFW_KEY_PAGE_UP, [&]() { isRunning = false; }); //Rotate camera up
 	EventManager::registerEvent(GLFW_KEY_PAGE_DOWN, [&]() { isRunning = false; }); //Rotate camera down
-	EventManager::registerEvent(GLFW_KEY_UP, [&]() { cameraThrust = Mathf.Min(cameraThrust + thrustGain * deltaTime, maxThrust);  }); //Increase thrust (timedelta and limit)
-	EventManager::registerEvent(GLFW_KEY_DOWN, [&]() { cameraThrust = Mathf.Max(cameraThrust - thrustGain * deltaTime, 0); }); //Decrease thrust (timeDelta and limit)
+	EventManager::registerEvent(GLFW_KEY_UP, [&]() { cameraThrust = fmin(cameraThrust + thrustGain * deltaTime, maxThrust);  }); //Increase thrust (timedelta and limit)
+	EventManager::registerEvent(GLFW_KEY_DOWN, [&]() { cameraThrust = fmax(cameraThrust - thrustGain * deltaTime, 0); }); //Decrease thrust (timeDelta and limit)
 	EventManager::registerEvent(GLFW_KEY_LEFT, [&]() { isRunning = false; }); //Rotate camPos left
 	EventManager::registerEvent(GLFW_KEY_RIGHT, [&]() { isRunning = false; }); //Rotate camPos right
 	//Slowly reduce camera momentum over time? Store cam vec3 momentum, vec3 orientation, int thrust
@@ -183,17 +184,17 @@ void Engine::update()
 	if (cameraMode = DEMO)
 	{
 		//Simulate Camera
-		cameraForces = orientation * thrust; //TODO : Maybe get orientation by accessing camera quaternion, avoid gimbal lock?
-		/* TEMP OVERWRITE */ cameraForces = glm::vec3(0, 0, 1) * thrust;
-		freeCamPosition = glm::translate(freeCamPosition, cameraForces * DeltaTime);
+		cameraForces = cameraOrientation * cameraThrust; //TODO : Maybe get orientation by accessing camera quaternion, avoid gimbal lock?
+		/* TEMP OVERWRITE */ cameraForces = glm::vec3(0, 0, 1) * cameraThrust;
+		freeCamPosition = glm::translate(freeCamPosition, cameraForces * (float)deltaTime);
 
 		//TODO Check calculations, may want to maintain momentum after turning?
 	}
-	else if (camerMode = TOUR)
+	else if (cameraMode = TOUR)
 	{
 		if (tourTimer < tourDuration && !tourPaused)
 		{
-			tourTimer += DeltaTime;
+			tourTimer += deltaTime;
 			//TODO : Simualte tour step
 		}
 	}
