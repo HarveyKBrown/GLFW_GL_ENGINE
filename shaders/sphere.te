@@ -9,6 +9,7 @@ uniform mat4 uView;
 uniform mat4 uProjection;
 uniform int uIterations;
 uniform vec3 uColor;
+uniform float uScale;
 
 void main()
 {
@@ -20,7 +21,7 @@ void main()
 	vec3 p1 = gl_TessCoord.y * tcPosition[1];
 	vec3 p2 = gl_TessCoord.z * tcPosition[2];
 
-	tePosition = normalize(p0 + p1 + p2) / (1 + 1*((uIterations - 1) % 1));
+	tePosition = normalize(p0 + p1 + p2) * uScale / (1 + 1*((uIterations - 1) % 1));
 	vec4 pos = uView * uModel * vec4(tePosition, 1);
 	gl_Position = uProjection * pos;
 

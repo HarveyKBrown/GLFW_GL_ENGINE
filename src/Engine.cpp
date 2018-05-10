@@ -20,6 +20,12 @@ unsigned int VBO, VAO, EBO;
 glm::vec3 color;
 int sphereIterations;
 int numberOfVert;
+float scale;
+
+/* FreeCam Mode Vars */
+const float camMaxForce = 10;
+const float camAcceleration = 2;
+float camForce;
 
 /* Shader vars */
 glm::mat4 rotMatrix;
@@ -63,9 +69,18 @@ bool Engine::init(const char* title, int width, int height)
 	cameraPosMatrix = glm::translate(cameraPosMatrix, glm::vec3(0.0f, 0.0f, -5.0f));
 
 	/* Create Scene Objects */
-	//shapes.push_back(new Sphere());
 	shapes.push_back(new Sphere());
+		shapes[0]->color = glm::vec3(1.f, 0.2f, 0.2f);
+	
 	shapes.push_back(new Cube());
+		shapes[1]->color = glm::vec3(0.2f, 1.f, 0.2f);
+		shapes[1]->orientation = glm::vec3(0.2f, 1.f, 0.2f);
+		shapes[1]->scale = 1.3f;
+	
+	shapes.push_back(new Sphere());
+		shapes[2]->scale = 200;
+		shapes[2]->position = glm::vec3(0.f, -201.f, 0.f);
+		shapes[2]->sphereIterations = 100;
 
 	isRunning = true;
 	return true;
@@ -111,7 +126,8 @@ void Engine::render()
 {
 	glClearColor(0.5f, 0.2f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	bool fill = true;
+	glPolygonMode(GL_FRONT_AND_BACK, fill ? GL_FILL : GL_LINE);
 
 	/* START VAO LOOP */
 	for (int i = 0; i < shapes.size(); i++) {
@@ -122,6 +138,7 @@ void Engine::render()
 		rotMatrix = currentShape->getPosMatrix();
 		sphereIterations = currentShape->sphereIterations;
 		color = currentShape->color;
+		scale = currentShape->scale;
 
 		/* Set Shader Uniforms */
 		unsigned int modelLoc = glGetUniformLocation(shaderProgram, "uModel");
@@ -134,6 +151,8 @@ void Engine::render()
 		glUniform1i(iterationsPointer, sphereIterations);
 		unsigned int colorPointer = glGetUniformLocation(shaderProgram, "uColor");
 		glUniform3f(colorPointer, color[0], color[1], color[2]);
+		unsigned int scalePointer = glGetUniformLocation(shaderProgram, "uScale");
+		glUniform1f(scalePointer, scale);
 
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);

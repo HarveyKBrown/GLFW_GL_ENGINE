@@ -22,6 +22,7 @@ public:
 	glm::vec3 orientation;
 	glm::vec3 color;
 	int sphereIterations = 0;
+	float scale = 1;
 };
 
 #endif
