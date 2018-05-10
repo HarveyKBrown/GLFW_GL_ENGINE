@@ -7,6 +7,7 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
+#include <math.h>
 #include "GenericShapes.h"
 #include "world.h"
 
@@ -23,9 +24,19 @@ int numberOfVert;
 float scale;
 
 /* FreeCam Mode Vars */
+enum camModes {
+	DEMO,
+	TOUR,
+	SCREENSHOT
+};
+int cameraMode = DEMO;
 const float camMaxForce = 10;
-const float camAcceleration = 2;
-float camForce;
+const float camAcceleration = 20;
+float camForce = 0;
+glm::vec3 camStartDemo = glm::vec3(0.0f, 0.0f, -5.0f);
+glm::vec3 camStartTour = glm::vec3(0.0f, 0.0f, -5.0f);
+glm::vec3 camStartScreenshot = glm::vec3(0.0f, 0.0f, -5.0f);
+
 
 /* Shader vars */
 glm::mat4 rotMatrix;
@@ -61,12 +72,19 @@ bool Engine::init(const char* title, int width, int height)
 	glfwSetKeyCallback(window, EventManager::handleEvents);
 	EventManager::registerEvent(GLFW_KEY_ESCAPE, [&] () { isRunning = false; });
 	EventManager::registerEvent(GLFW_KEY_Q, [&] () { isRunning = false; });
+	/* FreeCam Controls */
+	EventManager::registerEvent(GLFW_KEY_PAGE_UP, [&]() { isRunning = false; }); //Rotate camera up
+	EventManager::registerEvent(GLFW_KEY_PAGE_DOWN, [&]() { isRunning = false; }); //Rotate camera down
+	EventManager::registerEvent(GLFW_KEY_UP, [&]() { camForce = fmin(camForce + camAcceleration * deltaTime, camMaxForce);  }); //Increase thrust (timedelta and limit)
+	EventManager::registerEvent(GLFW_KEY_DOWN, [&]() { camForce = fmax(camForce - camAcceleration * deltaTime, 0); }); //Decrease thrust (timeDelta and limit)
+	EventManager::registerEvent(GLFW_KEY_LEFT, [&]() { isRunning = false; }); //Rotate camPos left
+	EventManager::registerEvent(GLFW_KEY_RIGHT, [&]() { isRunning = false; }); //Rotate camPos right
 
 	/* Initialise GLEW */
 	glewInit();
 	glEnable(GL_DEPTH_TEST);
 
-	cameraPosMatrix = glm::translate(cameraPosMatrix, glm::vec3(0.0f, 0.0f, -5.0f));
+	cameraPosMatrix = glm::translate(cameraPosMatrix, camStartDemo);
 
 	/* Create Scene Objects */
 	shapes.push_back(new Sphere());
@@ -119,7 +137,16 @@ void Engine::calculateDeltaTime()
 
 void Engine::update()
 {
-	
+	switch (cameraMode)
+	{
+	case DEMO:
+		cameraPosMatrix = glm::translate(cameraPosMatrix, glm::vec3(0, 0, 1) * (float)deltaTime * camForce);
+		break;
+	case SCREENSHOT:
+		break;
+	case TOUR:
+		break;
+	}
 }
 
 void Engine::render()
