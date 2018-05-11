@@ -31,9 +31,13 @@ enum camModes {
 };
 int cameraMode = DEMO;
 const float camMaxForce = 10;
-const float camAcceleration = 20;
+const float camAcceleration = 4;
 float camForce = 0;
-glm::vec3 camStartDemo = glm::vec3(0.0f, 0.0f, -5.0f);
+const float camTurnSpeed = 15;
+glm::vec3 camPosition;
+glm::vec3 camOrientation = glm::vec3(0.01f, 0, 0);
+
+glm::vec3 camStartDemo = glm::vec3(0.0f, 0.0f, -10.0f);
 glm::vec3 camStartTour = glm::vec3(0.0f, 0.0f, -5.0f);
 glm::vec3 camStartScreenshot = glm::vec3(0.0f, 0.0f, -5.0f);
 
@@ -73,32 +77,70 @@ bool Engine::init(const char* title, int width, int height)
 	EventManager::registerEvent(GLFW_KEY_ESCAPE, [&] () { isRunning = false; });
 	EventManager::registerEvent(GLFW_KEY_Q, [&] () { isRunning = false; });
 	/* FreeCam Controls */
-	EventManager::registerEvent(GLFW_KEY_PAGE_UP, [&]() { isRunning = false; }); //Rotate camera up
-	EventManager::registerEvent(GLFW_KEY_PAGE_DOWN, [&]() { isRunning = false; }); //Rotate camera down
-	EventManager::registerEvent(GLFW_KEY_UP, [&]() { camForce = fmin(camForce + camAcceleration * deltaTime, camMaxForce);  }); //Increase thrust (timedelta and limit)
-	EventManager::registerEvent(GLFW_KEY_DOWN, [&]() { camForce = fmax(camForce - camAcceleration * deltaTime, 0); }); //Decrease thrust (timeDelta and limit)
-	EventManager::registerEvent(GLFW_KEY_LEFT, [&]() { isRunning = false; }); //Rotate camPos left
-	EventManager::registerEvent(GLFW_KEY_RIGHT, [&]() { isRunning = false; }); //Rotate camPos right
+	EventManager::registerEvent(GLFW_KEY_PAGE_UP, [&]() { 
+		camOrientation = camOrientation + glm::vec3(-1, 0, 0) * camTurnSpeed * (float)deltaTime; 
+	}); //Rotate camera up
+	EventManager::registerEvent(GLFW_KEY_PAGE_DOWN, [&]() { 
+		camOrientation = camOrientation + glm::vec3(1, 0, 0) * camTurnSpeed * (float)deltaTime; 
+	}); //Rotate camera down
+	EventManager::registerEvent(GLFW_KEY_UP, [&]() { 
+		camForce = fmin(camForce + camAcceleration * deltaTime, camMaxForce);  
+	}); //Increase thrust (timedelta and limit)
+	EventManager::registerEvent(GLFW_KEY_DOWN, [&]() { 
+		camForce = fmax(camForce - camAcceleration * deltaTime, 0); 
+	}); //Decrease thrust (timeDelta and limit)
+	EventManager::registerEvent(GLFW_KEY_LEFT, [&]() { 
+		camOrientation = camOrientation + glm::vec3(0, -1, 0) * camTurnSpeed * (float)deltaTime; 
+	}); //Rotate camPos left
+	EventManager::registerEvent(GLFW_KEY_RIGHT, [&]() { 
+		camOrientation = camOrientation + glm::vec3(0, 1, 0) * camTurnSpeed * (float)deltaTime; 
+	}); //Rotate camPos right
 
 	/* Initialise GLEW */
 	glewInit();
 	glEnable(GL_DEPTH_TEST);
 
-	cameraPosMatrix = glm::translate(cameraPosMatrix, camStartDemo);
+	camPosition = camStartDemo;
 
 	/* Create Scene Objects */
+	//Sun
 	shapes.push_back(new Sphere());
-		shapes[0]->color = glm::vec3(1.f, 0.2f, 0.2f);
+		shapes[0]->color = glm::vec3(0.8f, 0.8f, 0.2f);
+		shapes[0]->scale = 1.f;
 	
+	//Planet 1
 	shapes.push_back(new Cube());
-		shapes[1]->color = glm::vec3(0.2f, 1.f, 0.2f);
-		shapes[1]->orientation = glm::vec3(0.2f, 1.f, 0.2f);
-		shapes[1]->scale = 1.3f;
+		shapes[1]->color = glm::vec3(0.2f, 0.6f, 0.2f);
+		shapes[1]->orientation = glm::vec3(0.2f, 0.8f, 0.2f);
+		shapes[1]->position = glm::vec3(2, 0, 0);
+		shapes[1]->scale = 0.4f;
+
+	//Planet 2
+	shapes.push_back(new Cube());
+		shapes[2]->color = glm::vec3(0.7f, 0.4f, 0.5f);
+		shapes[2]->orientation = glm::vec3(0.2f, 0.0f, 0.8f);
+		shapes[2]->position = glm::vec3(0, 0, -4);
+		shapes[2]->scale = 0.4f;
+
+	//Moon : Planet 1
+	shapes.push_back(new Cube());
+		shapes[3]->color = glm::vec3(0.8f, 0.4f, 0.6f);
+		shapes[3]->orientation = glm::vec3(0.8f, 0.4f, 0.2f);
+		shapes[3]->position = glm::vec3(2.5f, 0, 0);
+		shapes[3]->scale = 0.1f;
+
+	//Planet 2
+	shapes.push_back(new Cube());
+		shapes[4]->color = glm::vec3(0.4f, 0.4f, 0.8f);
+		shapes[4]->orientation = glm::vec3(0.6f, 0.8f, 0.2f);
+		shapes[4]->position = glm::vec3(0, 0, -4);
+		shapes[4]->scale = 0.8f;
 	
 	shapes.push_back(new Sphere());
-		shapes[2]->scale = 200;
-		shapes[2]->position = glm::vec3(0.f, -201.f, 0.f);
-		shapes[2]->sphereIterations = 100;
+		shapes[5]->scale = 200;
+		shapes[5]->position = glm::vec3(0.f, -210.f, 0.f);
+		shapes[5]->color = glm::vec3(0.f, 0.5f, 0.1f);
+		shapes[5]->sphereIterations = 100;
 
 	isRunning = true;
 	return true;
@@ -111,19 +153,12 @@ bool Engine::initShaders()
 	int sphereTE = ShaderConstructor::LoadShader("shaders/sphere.te", GL_TESS_EVALUATION_SHADER);
 	int sphereTC = ShaderConstructor::LoadShader("shaders/sphere.tc", GL_TESS_CONTROL_SHADER);
 
-	int vertShad = ShaderConstructor::LoadShader("shaders/simple.vert", GL_VERTEX_SHADER);
-	int fragShad = ShaderConstructor::LoadShader("shaders/simple.frag", GL_FRAGMENT_SHADER);
-
 	shaderProgram = ShaderConstructor::CreateShaderProgram(sphereVert, sphereFrag, sphereTC, sphereTE);
-	//shaderProgram = ShaderConstructor::CreateShaderProgram(vertShad, fragShad);
 
 	glDeleteShader(sphereVert);
 	glDeleteShader(sphereFrag);
 	glDeleteShader(sphereTE);
 	glDeleteShader(sphereTC);
-
-	glDeleteShader(vertShad);
-	glDeleteShader(fragShad);
 
 	return true;
 }
@@ -135,23 +170,42 @@ void Engine::calculateDeltaTime()
 	deltaTime = NOW - LAST;
 }
 
+glm::vec3 Engine::orbitFunction(float radius, float orbitSpeed)
+{
+	float theta = (float)glfwGetTime() * orbitSpeed;
+	float y = radius * sin(theta);
+	float x = radius * cos(theta);
+	return glm::vec3(x, 0, y);
+}
+
 void Engine::update()
 {
 	switch (cameraMode)
 	{
 	case DEMO:
-		cameraPosMatrix = glm::translate(cameraPosMatrix, glm::vec3(0, 0, 1) * (float)deltaTime * camForce);
+		camPosition += camOrientation * (float)deltaTime * camForce;
+		cameraPosMatrix = glm::translate(glm::mat4(1.f), camPosition); //Reset cameraPositionMatrix and set it to camPosition
+		cameraPosMatrix = glm::rotate(cameraPosMatrix, glm::radians(glm::length(camOrientation)), camOrientation); //How to get the magnitude? TODO: Iz fucked USE THIS FOR THE TOUR!!!
 		break;
 	case SCREENSHOT:
 		break;
 	case TOUR:
 		break;
 	}
+	shapes[0]->orientation += glm::vec3(0, 1, 0) * 0.1f * (float)deltaTime;
+	shapes[1]->orientation += glm::vec3(0, 1, 1) * (float)deltaTime;
+	shapes[1]->position = orbitFunction(2.f, -1.f);
+	shapes[2]->orientation += glm::vec3(0, 1, 0.5f) * (float)deltaTime;
+	shapes[2]->position = orbitFunction(6.f, 0.5f);
+	shapes[3]->orientation += glm::vec3(0.2f, 0.1f, 0.6f) * 0.6f * (float)deltaTime;
+	shapes[3]->position = orbitFunction(0.5f, 1.8f) + shapes[1]->position;
+	shapes[4]->orientation += glm::vec3(0.7f, 0.2f, 0.2f) * (float)deltaTime;
+	shapes[4]->position = orbitFunction(4.f, 0.2f);
 }
 
 void Engine::render()
 {
-	glClearColor(0.5f, 0.2f, 0.1f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	bool fill = true;
 	glPolygonMode(GL_FRONT_AND_BACK, fill ? GL_FILL : GL_LINE);

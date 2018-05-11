@@ -3,6 +3,7 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <glm/vec3.hpp>
 
 class Engine {
 	public:
@@ -18,6 +19,7 @@ class Engine {
 
 	private:
 		static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
+		glm::vec3 orbitFunction(float radius, float orbitSpeed);
 		bool isRunning = true;
 
 		double deltaTime;
