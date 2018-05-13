@@ -3,3 +3,5 @@ out*
 *.gch
 *.swp
 .vs/*
+readme.txt
+config.lua

@@ -5,11 +5,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/vec3.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 #include <vector>
 #include <math.h>
 #include "GenericShapes.h"
-#include "world.h"
 
 /* Shapes */
 std::vector<Shape*> shapes;
@@ -30,15 +31,17 @@ enum camModes {
 	SCREENSHOT
 };
 int cameraMode = DEMO;
-const float camMaxForce = 10;
-const float camAcceleration = 4;
+const float camMaxForce = 3;
+const float camAcceleration = 0.2f;
 float camForce = 0;
-const float camTurnSpeed = 15;
-glm::vec3 camPosition;
-glm::vec3 camOrientation = glm::vec3(0.01f, 0, 0);
+const float camTurnSpeed = 4;
+const float tourTimeMax = 20;
+float tourTime;
+float cameraDistance = -10;
+glm::vec3 camOrientation = glm::vec3(0, 0, 0);
 
 glm::vec3 camStartDemo = glm::vec3(0.0f, 0.0f, -10.0f);
-glm::vec3 camStartTour = glm::vec3(0.0f, 0.0f, -5.0f);
+glm::vec3 camStartTour = glm::vec3(0.0f, 0.0f, -15.0f);
 glm::vec3 camStartScreenshot = glm::vec3(0.0f, 0.0f, -5.0f);
 
 
@@ -78,16 +81,16 @@ bool Engine::init(const char* title, int width, int height)
 	EventManager::registerEvent(GLFW_KEY_Q, [&] () { isRunning = false; });
 	/* FreeCam Controls */
 	EventManager::registerEvent(GLFW_KEY_PAGE_UP, [&]() { 
-		camOrientation = camOrientation + glm::vec3(-1, 0, 0) * camTurnSpeed * (float)deltaTime; 
+		camOrientation = camOrientation + glm::vec3(1, 0, 0) * camTurnSpeed * (float)deltaTime; 
 	}); //Rotate camera up
 	EventManager::registerEvent(GLFW_KEY_PAGE_DOWN, [&]() { 
-		camOrientation = camOrientation + glm::vec3(1, 0, 0) * camTurnSpeed * (float)deltaTime; 
+		camOrientation = camOrientation + glm::vec3(-1, 0, 0) * camTurnSpeed * (float)deltaTime; 
 	}); //Rotate camera down
 	EventManager::registerEvent(GLFW_KEY_UP, [&]() { 
 		camForce = fmin(camForce + camAcceleration * deltaTime, camMaxForce);  
 	}); //Increase thrust (timedelta and limit)
 	EventManager::registerEvent(GLFW_KEY_DOWN, [&]() { 
-		camForce = fmax(camForce - camAcceleration * deltaTime, 0); 
+		camForce = fmax(camForce - camAcceleration * deltaTime, -camMaxForce); 
 	}); //Decrease thrust (timeDelta and limit)
 	EventManager::registerEvent(GLFW_KEY_LEFT, [&]() { 
 		camOrientation = camOrientation + glm::vec3(0, -1, 0) * camTurnSpeed * (float)deltaTime; 
@@ -95,12 +98,37 @@ bool Engine::init(const char* title, int width, int height)
 	EventManager::registerEvent(GLFW_KEY_RIGHT, [&]() { 
 		camOrientation = camOrientation + glm::vec3(0, 1, 0) * camTurnSpeed * (float)deltaTime; 
 	}); //Rotate camPos right
+	/* Mode Switching */
+	EventManager::registerEvent(GLFW_KEY_T, [&]() {
+		cameraMode = TOUR; //TODO reset tourtime
+		tourTime = 0;
+	});
+	EventManager::registerEvent(GLFW_KEY_G, [&]() {
+		cameraMode = DEMO;
+		cameraPosMatrix = glm::translate(glm::mat4(1.f), camStartDemo);
+		camOrientation = glm::vec3();
+		camForce = 0;
+	});
+	EventManager::registerEvent(GLFW_KEY_M, [&]() {
+		cameraMode = DEMO;
+		cameraPosMatrix = glm::translate(glm::mat4(1.f), camStartDemo);
+		camOrientation = glm::vec3();
+		camForce = 0;
+	});
+	EventManager::registerEvent(GLFW_KEY_P, [&]() {
+		cameraMode = SCREENSHOT;
+		cameraPosMatrix = glm::translate(glm::mat4(1.f), camStartScreenshot);
+		cameraDistance = -5.0f;
+		camOrientation = glm::vec3();
+		camForce = 0;
+	});
 
 	/* Initialise GLEW */
 	glewInit();
 	glEnable(GL_DEPTH_TEST);
 
-	camPosition = camStartDemo;
+	/* Camera Positioning */
+	cameraPosMatrix = glm::translate(glm::mat4(1.f), camStartDemo);
 
 	/* Create Scene Objects */
 	//Sun
@@ -182,14 +210,34 @@ void Engine::update()
 {
 	switch (cameraMode)
 	{
+	case SCREENSHOT: //Overload
 	case DEMO:
-		camPosition += camOrientation * (float)deltaTime * camForce;
-		cameraPosMatrix = glm::translate(glm::mat4(1.f), camPosition); //Reset cameraPositionMatrix and set it to camPosition
-		cameraPosMatrix = glm::rotate(cameraPosMatrix, glm::radians(glm::length(camOrientation)), camOrientation); //How to get the magnitude? TODO: Iz fucked USE THIS FOR THE TOUR!!!
-		break;
-	case SCREENSHOT:
+		cameraDistance = fmax(fmin(-2.0f, cameraDistance + camForce), -80.0f);
+		if (cameraDistance == -2.0f || cameraDistance == -80.0f) camForce = 0.f;
+		cameraPosMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 1) * cameraDistance);
+		if (glm::length(camOrientation) != 0)
+		{
+			cameraPosMatrix = glm::rotate(cameraPosMatrix, glm::length(camOrientation), camOrientation);
+		}
+
 		break;
 	case TOUR:
+		if (tourTime == 0)
+			cameraPosMatrix = glm::translate(glm::mat4(1.f), camStartTour);
+		if (tourTime > tourTimeMax)
+		{
+			cameraMode = DEMO;
+			cameraPosMatrix = glm::translate(glm::mat4(1.f), camStartDemo);
+			camOrientation = glm::vec3();
+			camForce = 0;
+		}
+		tourTime += (float)deltaTime;
+
+		/* Tour */
+		cameraPosMatrix = glm::rotate(cameraPosMatrix, glm::radians(1.0f), glm::vec3(0, -1, 0));
+		cameraPosMatrix = glm::rotate(cameraPosMatrix, glm::radians(0.2f), glm::vec3(0, 0, -1));
+		cameraPosMatrix = glm::rotate(cameraPosMatrix, glm::radians(0.5f), glm::vec3(1, 0, 0));
+		//cameraPosMatrix = glm::translate(cameraPosMatrix, glm::vec3(0, 0, 1));
 		break;
 	}
 	shapes[0]->orientation += glm::vec3(0, 1, 0) * 0.1f * (float)deltaTime;
@@ -260,5 +308,6 @@ void Engine::clean()
 
 void Engine::framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
+	projMatrix = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
 	glViewport(0, 0, width, height);
 }
